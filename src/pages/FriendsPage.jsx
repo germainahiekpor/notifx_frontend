@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Check, X, Plus, Trash2 } from 'lucide-react';
 import { WS_BASE } from '../constants';
 import { S } from '../utils';
+import { useGlobalCSS } from '../styles/global';
 import Avatar from '../components/atoms/Avatar';
 import Spinner from '../components/atoms/Spinner';
 
@@ -71,10 +72,10 @@ export default function FriendsPage({ api, users, me, onRefresh, token, onSelect
 
   const friendIds = new Set(friends.map(f => f.id));
   const availableUsers = users.filter(u => u.id !== me?.id && !friendIds.has(u.id));
-  const filteredUsers = availableUsers.filter(u =>
-    u.name.toLowerCase().includes(search.toLowerCase()) ||
-    u.email.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredUsers = search.trim() ? availableUsers.filter(u =>
+      u.name.toLowerCase().includes(search.toLowerCase()) ||
+      u.email.toLowerCase().includes(search.toLowerCase())
+  ) : [];
 
   const sendRequest = async (id) => {
     setActionId(id);
@@ -145,124 +146,124 @@ export default function FriendsPage({ api, users, me, onRefresh, token, onSelect
       const isBusy = actionId === f.id;
 
       return (
-        <div key={f.id} onClick={() => type === 'accepted' && onSelectFriend?.(f.id)}
-          style={{
-            ...S.card,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 12,
-            marginBottom: 10,
-            cursor: type === 'accepted' ? 'pointer' : 'default'
-          }} className="fu">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: 1 }}>
-            <Avatar name={user.name} size={44} fontSize={16} />
-            <div style={{ minWidth: 0, flex: 1 }}>
-              <div style={{ fontWeight: 700, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.name}</div>
-              <div style={{ fontSize: 11, color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.email}</div>
+          <div key={f.id} onClick={() => type === 'accepted' && onSelectFriend?.(f.id)}
+               style={{
+                 ...S.card,
+                 display: 'flex',
+                 alignItems: 'center',
+                 justifyContent: 'space-between',
+                 gap: 12,
+                 marginBottom: 10,
+                 cursor: type === 'accepted' ? 'pointer' : 'default'
+               }} className="fu">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: 1 }}>
+              <Avatar name={user.name} size={44} fontSize={16} />
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontWeight: 700, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.name}</div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 8, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+              {type === 'incoming' && (
+                  <button
+                      onClick={() => acceptRequest(f.id)}
+                      disabled={isBusy}
+                      style={{ ...S.btnPrimary, padding: '8px 14px', fontSize: 11 }}
+                  >
+                    {isBusy ? <Spinner size={12} color="#000" /> : <><Check size={12} /> Accept</>}
+                  </button>
+              )}
+
+              {type === 'outgoing' && (
+                  <button
+                      onClick={() => cancelRequest(f.id)}
+                      disabled={isBusy}
+                      style={{ ...S.btnGhost, padding: '8px 14px', fontSize: 11, borderColor: 'var(--red)', color: 'var(--red)' }}
+                  >
+                    {isBusy ? <Spinner size={12} /> : <><X size={12} /> Cancel</>}
+                  </button>
+              )}
+
+              {type === 'accepted' && (
+                  <button
+                      onClick={() => removeFriend(f.id)}
+                      disabled={isBusy}
+                      style={{ ...S.btnDanger, padding: '8px 14px', fontSize: 11 }}
+                  >
+                    {isBusy ? <Spinner size={12} /> : <><Trash2 size={12} /> Remove</>}
+                  </button>
+              )}
             </div>
           </div>
-
-          <div style={{ display: 'flex', gap: 8, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
-            {type === 'incoming' && (
-              <button
-                onClick={() => acceptRequest(f.id)}
-                disabled={isBusy}
-                style={{ ...S.btnPrimary, padding: '8px 14px', fontSize: 11 }}
-              >
-                {isBusy ? <Spinner size={12} color="#000" /> : <><Check size={12} /> Accept</>}
-              </button>
-            )}
-
-            {type === 'outgoing' && (
-              <button
-                onClick={() => cancelRequest(f.id)}
-                disabled={isBusy}
-                style={{ ...S.btnGhost, padding: '8px 14px', fontSize: 11, borderColor: 'var(--red)', color: 'var(--red)' }}
-              >
-                {isBusy ? <Spinner size={12} /> : <><X size={12} /> Cancel</>}
-              </button>
-            )}
-
-            {type === 'accepted' && (
-              <button
-                onClick={() => removeFriend(f.id)}
-                disabled={isBusy}
-                style={{ ...S.btnDanger, padding: '8px 14px', fontSize: 11 }}
-              >
-                {isBusy ? <Spinner size={12} /> : <><Trash2 size={12} /> Remove</>}
-              </button>
-            )}
-          </div>
-        </div>
       );
     });
   };
 
   return (
-    <div style={{ padding: '24px 16px', maxWidth: 900, margin: '0 auto' }}>
-      <div style={{ marginBottom: 32 }}>
-        <h2 style={{ fontFamily: 'var(--fd)', fontWeight: 800, fontSize: 24, marginBottom: 4 }}>Friend Management</h2>
-        <p style={{ color: 'var(--muted)', fontSize: 12 }}>Live updates via WebSocket</p>
-      </div>
-
-      <div style={{ marginBottom: 40 }}>
-        <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, textTransform: 'uppercase', letterSpacing: 0.5 }}>Add Friends</h3>
-        <div style={{ ...S.card, marginBottom: 12 }}>
-          <input
-            type="text"
-            placeholder="Search users by name or email..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            style={{ ...S.input, marginBottom: 0 }}
-          />
+      <div style={{ padding: '24px 16px', maxWidth: 900, margin: '0 auto' }}>
+        <div style={{ marginBottom: 32 }}>
+          <h2 style={{ color:'var(--text)', fontFamily: 'var(--fd)', fontWeight: 800, fontSize: 24, marginBottom: 4 }}>My friends</h2>
+          <p style={{ color: 'var(--muted)', fontSize: 12 }}>Search for friends and add them to your circle</p>
         </div>
 
-        {loading ? (
-          <div style={{ ...S.card, textAlign: 'center', color: 'var(--muted)' }}>Loading users...</div>
-        ) : filteredUsers.length === 0 ? (
-          <div style={{ ...S.card, textAlign: 'center', color: 'var(--muted)', padding: 24 }}>
-            {search ? 'No users found' : 'All users are already friends or pending'}
+        <div style={{ marginBottom: 40 }}>
+          <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, textTransform: 'uppercase', letterSpacing: 0.5 }}>Add Friends</h3>
+          <div style={{ ...S.card, marginBottom: 12 }}>
+            <input
+                type="text"
+                placeholder="Search users by name or email..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                style={{ ...S.input, marginBottom: 0 }}
+            />
           </div>
-        ) : (
-          filteredUsers.slice(0, 10).map(u => {
-            const isBusy = actionId === u.id;
-            return (
-              <div key={u.id} style={{ ...S.card, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 10 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: 1 }}>
-                  <Avatar name={u.name} size={44} fontSize={16} />
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ fontWeight: 700, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.name}</div>
-                    <div style={{ fontSize: 11, color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.email}</div>
+
+          {search.trim() && (
+              loading ? (
+                  <div style={{ ...S.card, textAlign: 'center', color: 'var(--muted)' }}>Loading users...</div>
+              ) : filteredUsers.length === 0 ? (
+                  <div style={{ ...S.card, textAlign: 'center', color: 'var(--muted)', padding: 24 }}>
+                    No users found
                   </div>
-                </div>
-                <button
-                  onClick={() => sendRequest(u.id)}
-                  disabled={isBusy}
-                  style={{ ...S.btnPrimary, padding: '8px 14px', fontSize: 11 }}
-                >
-                  {isBusy ? <Spinner size={12} color="#000" /> : <><Plus size={12} /> Add</>}
-                </button>
-              </div>
-            );
-          })
-        )}
-      </div>
+              ) : (
+                  filteredUsers.slice(0, 10).map(u => {
+                    const isBusy = actionId === u.id;
+                    return (
+                        <div key={u.id} style={{ ...S.card, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 10 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: 1 }}>
+                            <Avatar name={u.name} size={44} fontSize={16} />
+                            <div style={{ minWidth: 0, flex: 1 }}>
+                              <div style={{ fontWeight: 700, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.name}</div>
+                            </div>
+                          </div>
+                          <button
+                              onClick={() => sendRequest(u.id)}
+                              disabled={isBusy}
+                              style={{ ...S.btnPrimary, padding: '8px 14px', fontSize: 11 }}
+                          >
+                            {isBusy ? <Spinner size={12} color="#000" /> : <><Plus size={12} /> Add</>}
+                          </button>
+                        </div>
+                    );
+                  })
+              )
+          )}
+        </div>
 
-      <div style={{ marginBottom: 32 }}>
-        <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, color: 'var(--c)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Incoming Requests ({incoming.length})</h3>
-        {renderList(incoming, 'incoming')}
-      </div>
+        <div style={{ marginBottom: 32 }}>
+          <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, color: 'var(--c)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Incoming Requests ({incoming.length})</h3>
+          {renderList(incoming, 'incoming')}
+        </div>
 
-      <div style={{ marginBottom: 32 }}>
-        <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, color: 'var(--a)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Outgoing Requests ({outgoing.length})</h3>
-        {renderList(outgoing, 'outgoing')}
-      </div>
+        <div style={{ marginBottom: 32 }}>
+          <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, color: 'var(--a)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Outgoing Requests ({outgoing.length})</h3>
+          {renderList(outgoing, 'outgoing')}
+        </div>
 
-      <div>
-        <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, color: 'var(--green)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Friends ({accepted.length})</h3>
-        {renderList(accepted, 'accepted')}
+        <div>
+          <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, color: 'var(--green)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Friends ({accepted.length})</h3>
+          {renderList(accepted, 'accepted')}
+        </div>
       </div>
-    </div>
   );
 }
